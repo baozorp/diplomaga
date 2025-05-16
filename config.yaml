@@ -1,0 +1,7 @@
+paths:
+  results: ./
+  sources: ./
+coefficients:
+  content_based: 1
+  collaborative: 1
+  heuristic: 1
