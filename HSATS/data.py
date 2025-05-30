@@ -4,8 +4,6 @@ from scipy.spatial.distance import pdist, squareform
 from typing import Tuple, List
 import pandas as pd
 
-# Задаем начальное значение для генератора случайных чисел
-
 
 class Generator:
     @staticmethod
@@ -15,10 +13,24 @@ class Generator:
         return coordinates
 
     @staticmethod
+    def get_coordinates(count: int):
+        center_lat, center_lon = 55.751244, 37.618423
+        np.random.seed(42)
+        lat_offsets = np.random.uniform(-0.1, 0.1, size=count)
+        lon_offsets = np.random.uniform(-0.15, 0.15, size=count)
+        moscow_coords = pd.DataFrame({
+            "lat": center_lat + lat_offsets,
+            "lon": center_lon + lon_offsets
+        })
+        moscow_coords.to_csv("data/coordinates.csv", index=False, header=False)
+
+
+
+    @staticmethod
     def get_travel_times(coordinates: NDArray[np.float64],
                          coeff: float,
                          uniform_interval: Tuple[float, float]
-                         ) -> NDArray[np.float64]:
+                         ):
         euclidean_distances: NDArray[np.float64] = pdist(
             coordinates, 'euclidean')
         euclidean_distances_with_coeff: NDArray[np.float64] = euclidean_distances * coeff
@@ -28,22 +40,21 @@ class Generator:
         distances_squareform: NDArray[np.float64] = squareform(
             result_distances)
         df = pd.DataFrame(distances_squareform)
-        df.to_csv("travel_times.csv", index=False, header=True)
-        return distances_squareform
+        df.to_csv("data/travel_times.csv", index=False, header=True)
 
     @staticmethod
     def get_service_times(coeff: float,
                           service_time_interval: Tuple[float, float],
                           uniform_interval: Tuple[float, float],
                           length: int
-                          ) -> NDArray[np.float64]:
+                          ):
         service_time_values: NDArray[np.float64] = np.random.uniform(
             service_time_interval[0], service_time_interval[1], length)
         coeff_service_time_values: NDArray[np.float64] = service_time_values * coeff
         uniform_values: NDArray[np.float64] = np.random.uniform(
             uniform_interval[0], uniform_interval[1], length)
         result_service_times = coeff_service_time_values + uniform_values
-        return result_service_times
+        pd.Series(result_service_times).to_csv("data/service_times.csv", index=False)
 
     @staticmethod
     def generate_initial_route(travel_time_matrix: NDArray[np.float64], service_times: NDArray[np.float64], time_limit: int) -> List[int]:

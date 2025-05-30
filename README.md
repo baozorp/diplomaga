@@ -1,23 +1,102 @@
-# Stochastic Optimization-Based Recommender System
+# Hybrid Recommendation System with Route Optimization
 
-This project is a recommender system based on stochastic optimization for solving a scientific problem. The system combines three algorithms: collaborative filtering, item-based similarity, and distance-based similarity, whose results are integrated into a unified solution. The unique aspect of this system lies in its incorporation of the recommendation results iteratively into the stochastic optimization process. As a result of the solution, a CSV file is generated, containing sorted objects along with their scores.
+This project implements a **hybrid recommendation system** integrated with a **route optimization module** to generate a personalized sequence of objects (e.g., monuments or exhibits) for a user. The system combines:
 
-## Problem Statement
+- Collaborative filtering
+- Content-based filtering
+- Heuristic route optimization
 
-The recommender system is designed to address the scientific problem of providing personalized recommendations to users based on their past actions and preferences. Our aim is to offer highly relevant and personalized recommendations by considering the similarity between users and objects.
+The system produces an optimized route based on merged recommendation scores.
 
-## Methods and Approaches
+---
 
-To solve this problem, we have employed a combination of three algorithms:
+## 📌 Problem Statement
 
-1. Collaborative Filtering: This method analyzes user preferences and their interaction history with objects. We utilize algorithms that identify similarities between users and recommend objects that have been positively evaluated by other users with similar interests and preferences.
+The system addresses the task of generating **personalized recommendations** by leveraging user behavior data and item features. The goal is to select and order a subset of objects that are most relevant to the user, while also optimizing the sequence for efficient visiting.
 
-2. Item-based Similarity System: In this method, we analyze the similarity between objects based on their attributes and characteristics. We identify objects with similar attributes and recommend them to users based on their positive evaluations of similar objects.
+---
 
-3. Distance-based Similarity System: This method determines the distance or similarity between objects based on certain metrics or features. We utilize algorithms that find objects closest to those positively evaluated by the user.
+## ⚙️ Methods and Architecture
 
-## Integration with Stochastic Optimization
+### 1. **Collaborative Filtering**
+Analyzes historical interactions between users and objects to find similar users. Items preferred by similar users are recommended.
 
-A key feature of this project is the integration of the recommender system with the stochastic optimization process. This integration allows for the incorporation of the recommendation results to optimize the selection of an optimal route. By leveraging the recommendation scores obtained from the system, the stochastic optimization process can make informed decisions to identify the most favorable route.
+### 2. **Content-Based Filtering**
+Utilizes item attributes (e.g., architecture, type, material) to identify and recommend items similar to those previously liked by the user.
 
-The resulting solution provides a CSV file containing sorted objects and their scores, allowing users to make informed decisions based on the recommended optimal route.
+### 3. **Heuristic Route Optimization**
+A heuristic algorithm (HSATS) is used to determine the best sequence for visiting recommended objects under time constraints. Recommendation scores are used as rewards in the optimization.
+
+---
+
+## 📁 Project Structure
+
+```
+diploma-master/
+│
+├── data
+│
+├── recommendation_systems/
+│   ├── content_based.py
+│   ├── collaborative_system.py
+│   └── merge_recommendations.py
+│
+├── HSATS/
+│   ├── heuristic.py
+│   └── candidates_generator.py
+│
+├── maps_integration/
+│   └── points.py
+│
+├── map.html
+├── config.yaml
+├── main.py
+└── README.md
+```
+
+---
+
+## 🚀 Running the Project
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Run the main pipeline:
+
+```bash
+python main.py
+```
+
+This will:
+- Generate content-based and collaborative recommendations
+- Merge scores
+- Optimize route based on recommendations
+- Generate `points.json` for visualization
+
+---
+
+## 🗺️ Visualizing the Final Route on a Map
+
+Because browsers block `file://` access to local JSON files, run a local server:
+
+### Step 1: Start server
+
+```bash
+cd diploma-master
+python -m http.server 8080
+```
+
+### Step 2: Open in browser
+
+```
+http://localhost:8080/map.html
+```
+
+---
+
+## 👨‍💻 Author
+
+This project was developed as part of a master's thesis to demonstrate how recommendation and optimization techniques can be combined to solve a real-world problem.

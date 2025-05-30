@@ -1,21 +1,18 @@
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
 from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.metrics.pairwise import pairwise_distances
 import numpy as np
-import os
-# Function to recommend similar objects
+import os, warnings
 
 
-def content_based(sources_path, results_path):
+def content_based():
 
-    user_data_path = sources_path + "current_user.csv"
-    exhibits_path = sources_path + "object_exhibits.csv"
+    user_data_path = "data/current_user.csv"
+    exhibits_path = "data/object_exhibits.csv"
 
     if not os.path.isfile(user_data_path):
         raise FileNotFoundError(f"Current user data file {user_data_path} not found.")
     if not os.path.isfile(exhibits_path):
-        raise FileNotFoundError(f"Object museum exhibits data file {user_data_path} not found.")
+        raise FileNotFoundError(f"Object exhibits data file {exhibits_path} not found.")
 
     current_user = pd.read_csv(user_data_path, usecols=['user_id', 'object_id'])
     # Get the ID of the last object visited by user 0
@@ -27,7 +24,8 @@ def content_based(sources_path, results_path):
     # Select relevant features for similarity calculations
 
     features = df.columns.tolist()
-
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+    warnings.simplefilter("ignore", category=FutureWarning)
     # Encode categorical variables as numeric
     gf = pd.get_dummies(df, columns=features)
     # Calculate pairwise cosine similarity between all objects
@@ -52,8 +50,7 @@ def content_based(sources_path, results_path):
         similarities.append(average_similarity)
     validation_result = (similarities == sorted(similarities, reverse=True))
     if validation_result:
-        print("Content based has been successfully validated")
-        list_of_objects.to_csv(f"{results_path}recs_content_based.csv", index=False)
+        list_of_objects.to_csv(f"data/recs_content_based.csv", index=False)
     else:
         raise ValueError("Content base had a validation error")
 
@@ -70,49 +67,3 @@ def _recommend_objects(id, similarity, df):
     result = pd.DataFrame({'ID': scores[:, 0], 'similarity': scores[:, 1]})
 
     return result
-
-def generate_content_based_test_data(sources_path,
-                                     num_objects=100,
-                                     num_features=5,
-                                     num_categories=3,
-                                     user_id=0,
-                                     num_user_visits=25):
-    np.random.seed(42)  # воспроизводимость
-
-    # ====== object_museum_exhibits.csv ======
-    data = []
-    for obj_id in range(num_objects):
-        row = {
-            'ID': obj_id
-        }
-        # Случайные категориальные признаки (например, 'color', 'type', 'material')
-        for i in range(num_features):
-            row[f'feature_{i}'] = f'cat_{np.random.randint(num_categories)}'
-        data.append(row)
-
-    exhibits_df = pd.DataFrame(data)
-    exhibits_df.to_csv(os.path.join(sources_path, "object_exhibits.csv"), index=False)
-
-    # ====== current_user.csv ======
-    current_user_objects = np.random.choice(range(num_objects), size=num_user_visits, replace=False)
-    current_user_data = [{
-        'user_id': user_id,
-        'object_id': obj_id
-    } for obj_id in current_user_objects]
-
-    current_user_df = pd.DataFrame(current_user_data)
-    current_user_df.to_csv(os.path.join(sources_path, "current_user.csv"), index=False)
-
-    print(f"✅ Content-based test data generated in: {sources_path}")
-
-
-# Пример использования
-# generate_content_based_test_data(
-#     sources_path="./",
-#     num_objects=100,
-#     num_features=5,
-#     num_categories=4,
-#     num_user_visits=25
-# )
-
-content_based("./", "./")

@@ -1,12 +1,11 @@
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
-import os
+import os, warnings
 
-def collaborative_system(sources_path, results_path):
+def collaborative_system():
 
-    exhibit_data_path = sources_path + "exhibit_data.csv"
-    current_user_path = sources_path + "current_user.csv"
+    exhibit_data_path = "data/exhibit_data.csv"
+    current_user_path = "data/current_user.csv"
 
     if not os.path.isfile(exhibit_data_path):
         raise FileNotFoundError(f"Exhibit data file {exhibit_data_path} not found.")
@@ -17,18 +16,19 @@ def collaborative_system(sources_path, results_path):
     # Load in the exhibit data
     exhibit_data = pd.read_csv(exhibit_data_path)
     current_user = pd.read_csv(current_user_path)
-
+    
     if current_user.shape[0] < 20:
         return
-
+    
     # Clip the time_spent values to 300 scores
     exhibit_data = pd.concat([exhibit_data, current_user], ignore_index=True)
     exhibit_data['time_spent'] = exhibit_data['time_spent'].clip(upper=300)
-
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
     # Create a pivot table of the exhibit data to get a matrix of user-item interactions
     user_item_matrix = exhibit_data.pivot_table(values='time_spent', index='user_id', columns='object_id').fillna(0)
     # Compute user similarity based on user-item interactions
     # Here, we are using cosine similarity as the similarity metric
+    user_item_matrix = user_item_matrix.loc[~(user_item_matrix == 0).all(axis=1)]
     user_similarity = cosine_similarity(user_item_matrix)
     user_similarity_df = pd.DataFrame(user_similarity, index=user_item_matrix.index, columns=user_item_matrix.index)
 
@@ -37,14 +37,14 @@ def collaborative_system(sources_path, results_path):
 
     prediction = get_collaborative_filtering_recs(user_id, user_item_matrix, user_similarity_df)
 
-    # Validate the collaborative filtering system using a random subset of the data
-    collaborative_filtering_validation(user_id, user_item_matrix, user_similarity_df, exhibit_data)
+    # # Validate the collaborative filtering system using a random subset of the data
+    # collaborative_filtering_validation(user_id, user_item_matrix, user_similarity_df, exhibit_data)
 
     prediction = prediction.sort_values(ascending=False)
     prediction_df = pd.DataFrame(prediction, columns=['seconds'])
     prediction_df.reset_index(inplace=True)
     prediction_df.rename(columns={'object_id': 'ID'}, inplace=True)
-    prediction_df.to_csv(f"{results_path}/recs_collaborative.csv", index=False)
+    prediction_df.to_csv("data/recs_collaborative.csv", index=False)
 
 
 def get_collaborative_filtering_recs(user_id, user_item_matrix, user_similarity_df, start_from=1, end_with=11, validation=False):
@@ -115,64 +115,8 @@ def collaborative_filtering_validation(user_id, user_item_matrix, user_similarit
         # Append the current mean_score to the array
         mean_score_array.append(mean_score)
 
-    # Print the validation result
     if validation_result:
         print("Collaborative filtering has been successfully validated")
     else:
         raise ValueError("Collaborative filtering had a validation error")
-
-
-
-
-def generate_collaborative_test_data(sources_path,
-                                     num_users=50,
-                                     num_objects=100,
-                                     coeff=0.1,
-                                     service_time_interval=(0, 10),
-                                     uniform_interval=(0, 2)):
-    np.random.seed(42)  # для воспроизводимости
-
-    def generate_time():
-        base = np.random.uniform(*service_time_interval)
-        noise = np.random.uniform(*uniform_interval)
-        return base * coeff + noise
-
-    # ====== exhibit_data.csv ======
-    data = []
-    for user_id in range(1, num_users + 1):
-        viewed_objects = np.random.choice(range(num_objects), size=np.random.randint(5, 20), replace=False)
-        for obj in viewed_objects:
-            time_spent = generate_time()
-            data.append({
-                'user_id': user_id,
-                'object_id': obj,
-                'time_spent': time_spent
-            })
-
-    exhibit_df = pd.DataFrame(data)
-    exhibit_df.to_csv(os.path.join(sources_path, "exhibit_data.csv"), index=False)
-
-    # ====== current_user.csv ======
-    current_user_data = []
-    current_user_objects = np.random.choice(range(num_objects), size=25, replace=False)
-    for obj in current_user_objects:
-        time_spent = generate_time()
-        current_user_data.append({
-            'user_id': 0,
-            'object_id': obj,
-            'time_spent': time_spent
-        })
-
-    current_user_df = pd.DataFrame(current_user_data)
-    current_user_df.to_csv(os.path.join(sources_path, "current_user.csv"), index=False)
-
-    print(f"✅ Test data generated in: {sources_path}")
-
-
-# Пример вызова
-# generate_collaborative_test_data(
-#     sources_path="./",
-#     coeff=0.1,
-#     service_time_interval=(0, 10),
-#     uniform_interval=(0, 2)
-# )
+    

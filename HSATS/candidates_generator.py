@@ -10,7 +10,6 @@ class CandidatesGenerator:
     def generate_candidate_solution(self, current_solution):
         candidate = current_solution.copy()
 
-        # Randomly choose a neighborhood strategy
         choices: list[int] = [1, 2, 3, 4]
         if len(candidate) >= len(self.service_times):
             choices = [2, 3]
@@ -75,15 +74,19 @@ class CandidatesGenerator:
                     solution.insert(remove_position, removed_spot)
 
     def reverse_sequence(self, solution):
+        if len(solution) < 4:
+            return
+
         for _ in range(len(solution)):
-            if len(solution) > 2:
-                start, end = np.random.choice(
-                    range(1, len(solution) - 1), size=2, replace=False)
+            start, end = np.random.choice(
+                range(1, len(solution) - 1), size=2, replace=False)
+            if start > end:
+                start, end = end, start
+            solution[start:end+1] = reversed(solution[start:end+1])
+            if not self.validate_solution(solution):
                 solution[start:end+1] = reversed(solution[start:end+1])
-                if not self.validate_solution(solution):
-                    solution[start:end+1] = reversed(solution[start:end+1])
-                else:
-                    break
+            else:
+                break
 
     def insert_and_remove(self, solution: list, unvisited_spot):
         if len(solution) > 1:
@@ -95,10 +98,11 @@ class CandidatesGenerator:
         return total_time <= self.time_limit
 
     def calculate_objective_time(self, solution):
-        total_time = 0
+        if len(solution) < 2:
+            return 0.0
+        total_time = 0.0
         for i in range(len(solution) - 1):
-            travel_time = self.travel_time_matrix[solution[i],
-                                                  solution[i + 1]]
+            travel_time = self.travel_time_matrix[solution[i], solution[i + 1]]
             service_time = self.service_times[solution[i + 1]]
             total_time += travel_time + service_time
         return total_time

@@ -3,7 +3,6 @@ import random
 import numpy as np
 from numpy.typing import NDArray
 from HSATS.candidates_generator import CandidatesGenerator
-from typing import List
 from HSATS.data import Generator
 import pandas as pd
 
@@ -15,12 +14,8 @@ def calculate_objective(solution, rewards: NDArray[np.float64]) -> float:
 
 
 def simulated_annealing(travel_time_matrix, service_times, rewards, T_start, T_end, T_cool, CN, TL, Elen):
-
-    # Initialize parameters
     t_current = T_start
     it = 0
-
-    # Initialize solution
     initial_solution = Generator.generate_initial_route(
         travel_time_matrix, service_times, TL)
     X_current = initial_solution
@@ -33,7 +28,6 @@ def simulated_annealing(travel_time_matrix, service_times, rewards, T_start, T_e
 
     solution_generator = CandidatesGenerator(
         travel_time_matrix, service_times, TL)
-    print(E_best)
     while t_current > T_end:
         while it < Elen:
             # Generate candidate solutions
@@ -49,7 +43,6 @@ def simulated_annealing(travel_time_matrix, service_times, rewards, T_start, T_e
                 E_current += f_opt
                 X_best = X_current
                 E_best = E_current
-                print(E_best)
                 tabu_list.append(X_current)
             else:
                 # Choose a suboptimal solution from candidates
@@ -73,32 +66,24 @@ def get_solution():
     count = 50
     coeff = 0.1
     TL = 50
-
-    coordinates: NDArray[np.float64] = np.random.normal(
-        0, 20, (count, 2))
-    travel_time_matrix = Generator.get_travel_times(
-        coordinates=coordinates,
-        coeff=coeff,
-        uniform_interval=(0, 2))
-    service_times = Generator.get_service_times(
-        coeff=coeff,
-        service_time_interval=(0, 10),
-        uniform_interval=(0, 2),
-        length=count
-    )
-
-    rewards: NDArray[np.float64] = np.random.normal(25, 5, (count, 1))
-    print(len(service_times))
+    coordinates = pd.read_csv("data/coordinates.csv").to_numpy(dtype=np.float64)
+    travel_time_matrix = pd.read_csv('data/travel_times.csv').to_numpy(dtype=np.float64)
+    service_times = pd.read_csv('data/service_times.csv').squeeze("columns").to_numpy(dtype=np.float64)
+    merged_df = pd.read_csv("data/merged_recommendations.csv")
+    # Инициализируем награды единицами
+    rewards = np.ones((count, 1), dtype=np.float64)
+    for _, row in merged_df.iterrows():
+        obj_id = int(row['ID'])
+        if 0 <= obj_id < count:
+            rewards[obj_id] = row['merge_scores']
     T_start = 50
     T_end = 5
     T_cool = 0.95
     CN = 25
     Elen = 100
-
     best_solution, best_objective = simulated_annealing(
         travel_time_matrix, service_times, rewards, T_start, T_end, T_cool, CN, TL, Elen)
     df = pd.DataFrame({'ID': best_solution})
-
-    df.to_csv("./heuristic.csv", index=False)
-    print("Best Solution:", [int(i) for i in best_solution])
+    df.to_csv("data/final_result.csv", index=False)
+    print("Best Solution:", best_solution)
     print("Best Objective Value:", best_objective)
